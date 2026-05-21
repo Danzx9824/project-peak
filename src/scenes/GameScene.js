@@ -17,6 +17,7 @@ export class GameScene extends Phaser.Scene {
         this.currentLevel = data.level || 0;
         this.deaths = data.deaths || 0;
         this.totalTime = data.totalTime || 0;
+        this.strawberries = data.strawberries || 0;
     }
 
     create() {
@@ -86,10 +87,60 @@ export class GameScene extends Phaser.Scene {
             });
         }
 
+        // Strawberries overlap
+        if (this.strawberrySprites && this.strawberrySprites.length > 0) {
+            this.strawberryGroup = this.physics.add.staticGroup();
+            this.strawberrySprites.forEach(s => this.strawberryGroup.add(s));
+            this.physics.add.overlap(this.player, this.strawberryGroup, (player, berry) => {
+                berry.destroy();
+                this.strawberries++;
+                this.updateStrawberryCount();
+                
+                // Collect effect
+                if (this.pollenEmitter) {
+                    this.pollenEmitter.emitParticleAt(berry.x, berry.y, 10);
+                }
+                
+                // Play sound via player
+                this.player.playSound('land'); // Reuse for now
+            });
+        }
+
+        // Crumbling Platforms collision
+        if (this.crumblingSprites && this.crumblingSprites.length > 0) {
+            this.crumblingGroup = this.physics.add.staticGroup();
+            this.crumblingSprites.forEach(s => this.crumblingGroup.add(s));
+            this.physics.add.collider(this.player, this.crumblingGroup, (player, block) => {
+                // Only crumble if player lands on top
+                if (player.body.bottom <= block.y && player.body.velocity.y >= 0) {
+                    if (!block.getData('crumbling')) {
+                        block.setData('crumbling', true);
+                        
+                        // Shake tween
+                        this.tweens.add({
+                            targets: block,
+                            x: block.x + 1,
+                            yoyo: true,
+                            repeat: 10,
+                            duration: 40,
+                            onComplete: () => {
+                                block.disableBody(true, true);
+                                // Respawn after 3 seconds
+                                this.time.delayedCall(3000, () => {
+                                    block.enableBody(true, block.getData('originX'), block.getData('originY'), true, true);
+                                    block.setData('crumbling', false);
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
         // ── Camera ──
         this.cameras.main.setBounds(0, 0, worldW, worldH);
-        this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
-        this.cameras.main.setDeadzone(20, 20);
+        // this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
+        // this.cameras.main.setDeadzone(20, 20);
         this.cameras.main.fadeIn(500, 10, 6, 18);
 
         // ── Particle systems ──
@@ -140,6 +191,8 @@ export class GameScene extends Phaser.Scene {
         this.spikeSprites = [];
         this.exitSprites = [];
         this.checkpointSprites = [];
+        this.strawberrySprites = [];
+        this.crumblingSprites = [];
 
         // Build solid tiles array (only solid ground tiles)
         const solidTiles = [];
@@ -224,6 +277,47 @@ export class GameScene extends Phaser.Scene {
             solidTiles.push(solidRow);
             platformTiles.push(platRow);
         }
+
+        // Add Strawberries
+        levelData.strawberries.forEach(pos => {
+            const berry = this.physics.add.sprite(
+                pos.x * TILE + TILE / 2,
+                pos.y * TILE + TILE / 2,
+                'item_strawberry'
+            );
+            berry.body.setImmovable(true);
+            berry.body.allowGravity = false;
+            berry.setDepth(5);
+            // Floating animation
+            this.tweens.add({
+                targets: berry,
+                y: berry.y - 4,
+                duration: 1000,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+            this.strawberrySprites.push(berry);
+        });
+
+        // Add Crumbling Platforms
+        levelData.crumbling.forEach(pos => {
+            const block = this.physics.add.sprite(
+                pos.x * TILE + TILE / 2,
+                pos.y * TILE + TILE / 2,
+                `tiles_${themeKey}`, 10
+            );
+            block.body.setImmovable(true);
+            block.body.allowGravity = false;
+            // Slightly smaller hitbox to allow sliding off
+            block.body.setSize(16, 12);
+            block.body.setOffset(0, 0);
+            block.setDepth(1);
+            block.setData('originX', block.x);
+            block.setData('originY', block.y);
+            block.setData('crumbling', false);
+            this.crumblingSprites.push(block);
+        });
 
         // Create solid tilemap
         const solidMap = this.make.tilemap({
@@ -325,6 +419,17 @@ export class GameScene extends Phaser.Scene {
             color: '#ffffff'
         }).setScrollFactor(0).setDepth(100);
 
+        // Strawberry counter
+        this.berryIcon = this.add.image(30, 8, 'icon_berry')
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.berryText = this.add.text(38, 5, `${this.strawberries}`, {
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '5px',
+            color: '#ffffff'
+        }).setScrollFactor(0).setDepth(100);
+
         // Level name (fades in and out)
         const levelName = this.add.text(160, 12, levelData.name, {
             fontFamily: '"Press Start 2P", monospace',
@@ -359,6 +464,21 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    updateStrawberryCount() {
+        this.berryText.setText(`${this.strawberries}`);
+        this.berryText.setColor('#ff80a0');
+        this.tweens.add({
+            targets: this.berryIcon,
+            scaleX: 1.5,
+            scaleY: 1.5,
+            yoyo: true,
+            duration: 150
+        });
+        this.time.delayedCall(300, () => {
+            if (this.berryText) this.berryText.setColor('#ffffff');
+        });
+    }
+
     nextLevel() {
         if (this.isTransitioning) return;
         this.isTransitioning = true;
@@ -376,7 +496,7 @@ export class GameScene extends Phaser.Scene {
         // Fade to next level
         this.cameras.main.fadeOut(600, 10, 6, 18);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.restart({ level: nextLevelIndex, deaths: this.deaths, totalTime: newTotalTime });
+            this.scene.restart({ level: nextLevelIndex, deaths: this.deaths, totalTime: newTotalTime, strawberries: this.strawberries });
         });
     }
 
@@ -402,7 +522,7 @@ export class GameScene extends Phaser.Scene {
         const mins = Math.floor(totalTime / 60);
         const secs = totalTime % 60;
 
-        const statsText = this.add.text(W / 2, H / 2, `Deaths: ${this.deaths}\nTime: ${mins}:${secs.toString().padStart(2, '0')}`, {
+        const statsText = this.add.text(W / 2, H / 2, `Deaths: ${this.deaths}\nStrawberries: ${this.strawberries}\nTime: ${mins}:${secs.toString().padStart(2, '0')}`, {
             fontFamily: '"Press Start 2P", monospace',
             fontSize: '5px',
             color: '#ffffff',
@@ -446,6 +566,16 @@ export class GameScene extends Phaser.Scene {
         // Update player
         if (this.player) {
             this.player.update(time, delta);
+
+            // Room-based camera logic (Celeste style)
+            const roomW = 320;
+            const roomH = 180;
+            const targetScrollX = Math.floor(this.player.x / roomW) * roomW;
+            const targetScrollY = Math.floor(this.player.y / roomH) * roomH;
+
+            // Smoothly pan camera to the current room
+            this.cameras.main.scrollX += (targetScrollX - this.cameras.main.scrollX) * 0.15;
+            this.cameras.main.scrollY += (targetScrollY - this.cameras.main.scrollY) * 0.15;
 
             // Fall death
             if (this.player.y > this.fallZoneY && !this.player.isDead) {

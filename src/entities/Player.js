@@ -6,12 +6,14 @@ import Phaser from 'phaser';
 
 // Physics constants
 const RUN_MAX_SPEED = 100;
-const RUN_ACCEL = 800;
-const RUN_DECEL = 600;
-const AIR_ACCEL = 500;
-const AIR_DECEL = 300;
-const JUMP_VELOCITY = -220;
-const DOUBLE_JUMP_VELOCITY = -200;
+const RUN_ACCEL = 1800;         // Very high accel → instant response
+const AIR_ACCEL = 1400;         // Tight air control
+const GROUND_FRICTION = 0.12;   // Multiplier kept per frame when no input (ground) — stops in ~2 frames
+const AIR_FRICTION = 0.30;      // Slightly more slide in air for natural feel
+const TURN_MULTIPLIER = 2.5;    // Extra accel when reversing direction
+const STOP_THRESHOLD = 8;       // Below this speed, snap to 0
+const JUMP_VELOCITY = -265;
+const DOUBLE_JUMP_VELOCITY = -240;
 const MAX_FALL_SPEED = 250;
 const COYOTE_TIME = 80;       // ms
 const JUMP_BUFFER_TIME = 100; // ms
@@ -32,7 +34,7 @@ export class Player extends Phaser.GameObjects.Sprite {
         this.body.setSize(8, 14);
         this.body.setOffset(2, 2);
         this.body.setMaxVelocityY(MAX_FALL_SPEED);
-        this.body.setDragX(0);
+        this.body.setDragX(0); // We handle drag manually for tighter control
 
         // State
         this.state = 'idle'; // idle, run, jump, fall, dash, dead
@@ -44,8 +46,7 @@ export class Player extends Phaser.GameObjects.Sprite {
         this.wasGrounded = false;
         this.coyoteTimer = 0;
         this.jumpBufferTimer = 0;
-        this.canDoubleJump = false;
-        this.hasDoubleJumped = false;
+        this.jumpCount = 0;
         this.isJumping = false;
         this.jumpHeld = false;
 
@@ -164,9 +165,9 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     isJumpPressed() {
         return Phaser.Input.Keyboard.JustDown(this.keySpace) ||
-               Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
-               Phaser.Input.Keyboard.JustDown(this.keyW) ||
-               Phaser.Input.Keyboard.JustDown(this.keyZ);
+            Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
+            Phaser.Input.Keyboard.JustDown(this.keyW) ||
+            Phaser.Input.Keyboard.JustDown(this.keyZ);
     }
 
     isJumpHeld() {
@@ -175,7 +176,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     isDashPressed() {
         return Phaser.Input.Keyboard.JustDown(this.keyShift) ||
-               Phaser.Input.Keyboard.JustDown(this.keyX);
+            Phaser.Input.Keyboard.JustDown(this.keyX);
     }
 
     update(time, delta) {
@@ -196,12 +197,15 @@ export class Player extends Phaser.GameObjects.Sprite {
         // Reset abilities on ground
         if (this.isGrounded) {
             this.coyoteTimer = COYOTE_TIME;
-            this.hasDoubleJumped = false;
-            this.canDoubleJump = true;
+            this.jumpCount = 0;
             this.canDash = true;
             this.isJumping = false;
         } else {
             this.coyoteTimer -= dtMs;
+            // If we fall off a ledge without jumping, we've "used" the first jump
+            if (this.coyoteTimer <= 0 && this.jumpCount === 0) {
+                this.jumpCount = 1;
+            }
         }
 
         // Jump buffer
@@ -218,28 +222,36 @@ export class Player extends Phaser.GameObjects.Sprite {
         // Input
         const inputX = this.getInputX();
 
-        // Horizontal movement with acceleration
+        // ── Horizontal movement: high accel, near-instant stop ──
         if (inputX !== 0) {
             const accel = this.isGrounded ? RUN_ACCEL : AIR_ACCEL;
             const targetVelX = inputX * RUN_MAX_SPEED;
             const currentVelX = this.body.velocity.x;
 
-            if (Math.sign(targetVelX) !== Math.sign(currentVelX) && currentVelX !== 0) {
-                // Turning around - faster decel
-                this.body.velocity.x = Phaser.Math.Linear(currentVelX, targetVelX, accel * 1.5 * dt / RUN_MAX_SPEED);
+            // Turning around gets an extra boost so direction changes feel instant
+            const isTurning = (Math.sign(targetVelX) !== Math.sign(currentVelX) && currentVelX !== 0);
+            const effectiveAccel = isTurning ? accel * TURN_MULTIPLIER : accel;
+
+            // Move toward target speed
+            const diff = targetVelX - currentVelX;
+            const step = effectiveAccel * dt;
+
+            if (Math.abs(diff) <= step) {
+                this.body.velocity.x = targetVelX;
             } else {
-                this.body.velocity.x = Phaser.Math.Linear(currentVelX, targetVelX, accel * dt / RUN_MAX_SPEED);
+                this.body.velocity.x += Math.sign(diff) * step;
             }
 
             this.facingRight = inputX > 0;
             this.setFlipX(!this.facingRight);
         } else {
-            // Deceleration
-            const decel = this.isGrounded ? RUN_DECEL : AIR_DECEL;
-            if (Math.abs(this.body.velocity.x) < 5) {
+            // No input → apply strong friction to kill velocity fast
+            const friction = this.isGrounded ? GROUND_FRICTION : AIR_FRICTION;
+            this.body.velocity.x *= friction;
+
+            // Snap to zero when below threshold to avoid micro-drift
+            if (Math.abs(this.body.velocity.x) < STOP_THRESHOLD) {
                 this.body.velocity.x = 0;
-            } else {
-                this.body.velocity.x = Phaser.Math.Linear(this.body.velocity.x, 0, decel * dt / RUN_MAX_SPEED);
             }
         }
 
@@ -250,9 +262,9 @@ export class Player extends Phaser.GameObjects.Sprite {
 
         // Execute jump (with buffer and coyote time)
         if (this.jumpBufferTimer > 0) {
-            if (this.coyoteTimer > 0 && !this.isJumping) {
+            if (this.coyoteTimer > 0) {
                 this.jump();
-            } else if (this.canDoubleJump && !this.hasDoubleJumped) {
+            } else if (this.jumpCount < 2) {
                 this.doubleJump();
             }
         }
@@ -278,6 +290,7 @@ export class Player extends Phaser.GameObjects.Sprite {
     jump() {
         this.body.velocity.y = JUMP_VELOCITY;
         this.isJumping = true;
+        this.jumpCount = 1;
         this.jumpBufferTimer = 0;
         this.coyoteTimer = 0;
         this.playSound('jump');
@@ -286,7 +299,7 @@ export class Player extends Phaser.GameObjects.Sprite {
 
     doubleJump() {
         this.body.velocity.y = DOUBLE_JUMP_VELOCITY;
-        this.hasDoubleJumped = true;
+        this.jumpCount = 2;
         this.isJumping = true;
         this.jumpBufferTimer = 0;
         this.playSound('doublejump');
@@ -395,18 +408,20 @@ export class Player extends Phaser.GameObjects.Sprite {
     }
 
     updateAnimation() {
+        const prefix = this.canDash ? 'player_sheet_' : 'player_sheet_nodash_';
+
         if (this.isDashing) {
-            this.play('player_dash', true);
+            this.play(`${prefix}dash`, true);
         } else if (!this.isGrounded) {
             if (this.body.velocity.y < 0) {
-                this.play('player_jump', true);
+                this.play(`${prefix}jump`, true);
             } else {
-                this.play('player_fall', true);
+                this.play(`${prefix}fall`, true);
             }
         } else if (Math.abs(this.body.velocity.x) > 10) {
-            this.play('player_run', true);
+            this.play(`${prefix}run`, true);
         } else {
-            this.play('player_idle', true);
+            this.play(`${prefix}idle`, true);
         }
     }
 
@@ -446,7 +461,7 @@ export class Player extends Phaser.GameObjects.Sprite {
         this.isDashing = false;
         this.dashTimer = 0;
         this.canDash = true;
-        this.hasDoubleJumped = false;
+        this.jumpCount = 0;
         this.isJumping = false;
         this.coyoteTimer = 0;
         this.jumpBufferTimer = 0;

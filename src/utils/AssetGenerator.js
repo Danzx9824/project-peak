@@ -32,25 +32,39 @@ export const THEMES = {
         accent: '#60d0e0', spike: '#a0b0c0',
         bgFar: '#c090c0', bgMid: '#9080b0', bgNear: '#a0a0c0',
         leaf: '#c0e0f0', flower: '#80d0e0'
+    },
+    city: {
+        name: 'Forsaken City',
+        sky1: '#ffb8d0', sky2: '#d0a0d0', sky3: '#8090c0',
+        ground: '#708090', groundDark: '#405060', groundLight: '#e0f0ff', // snow on top
+        dirt: '#506070', dirtDark: '#304050',
+        accent: '#60c0ff', spike: '#90a0b0',
+        bgFar: '#a080b0', bgMid: '#7080a0', bgNear: '#405060',
+        leaf: '#ffffff', flower: '#80d0e0'
     }
 };
 
 export function generateAllAssets(scene) {
-    generatePlayerSprites(scene);
+    generatePlayerSprites(scene, true);  // with dash
+    generatePlayerSprites(scene, false); // without dash
     generateTilesets(scene);
     generateBackgrounds(scene);
     generateParticles(scene);
     generateUI(scene);
+    generateCollectibles(scene);
 }
 
 // ──── Player Sprites ────
-function generatePlayerSprites(scene) {
+function generatePlayerSprites(scene, hasDash) {
     const W = 12, H = 16;
-    // Color palette
+    // Color palette based on dash state
+    const hairColor = hasDash ? '#e03048' : '#30a0e0';
+    const hairLight = hasDash ? '#f06080' : '#60d0f0';
+    
     const C = {
         outline: '#1a1020',
-        hair: '#5a2030',
-        hairLight: '#8a3040',
+        hair: hairColor,
+        hairLight: hairLight,
         skin: '#f0c090',
         skinDark: '#d0a070',
         eye: '#1a1030',
@@ -163,7 +177,8 @@ function generatePlayerSprites(scene) {
     // Generate sprite sheet texture (all frames in a row)
     const allFrames = [...idleFrames, ...runFrames, jumpFrame, fallFrame, dashFrame];
     const sheetWidth = allFrames.length * W;
-    const canvas = scene.textures.createCanvas('player_sheet', sheetWidth, H);
+    const sheetKey = hasDash ? 'player_sheet' : 'player_sheet_nodash';
+    const canvas = scene.textures.createCanvas(sheetKey, sheetWidth, H);
     const ctx = canvas.getContext();
 
     allFrames.forEach((frame, fi) => {
@@ -175,49 +190,51 @@ function generatePlayerSprites(scene) {
     // Create frame data
     const frameNames = [];
     for (let i = 0; i < allFrames.length; i++) {
-        scene.textures.get('player_sheet').add(i, 0, i * W, 0, W, H);
+        scene.textures.get(sheetKey).add(i, 0, i * W, 0, W, H);
         frameNames.push(i);
     }
 
     // Define animations
     scene.anims.create({
-        key: 'player_idle',
-        frames: [{ key: 'player_sheet', frame: 0 }, { key: 'player_sheet', frame: 1 }],
+        key: `${sheetKey}_idle`,
+        frames: [{ key: sheetKey, frame: 0 }, { key: sheetKey, frame: 1 }],
         frameRate: 3, repeat: -1
     });
 
     scene.anims.create({
-        key: 'player_run',
+        key: `${sheetKey}_run`,
         frames: [
-            { key: 'player_sheet', frame: 2 }, { key: 'player_sheet', frame: 3 },
-            { key: 'player_sheet', frame: 4 }, { key: 'player_sheet', frame: 5 }
+            { key: sheetKey, frame: 2 }, { key: sheetKey, frame: 3 },
+            { key: sheetKey, frame: 4 }, { key: sheetKey, frame: 5 }
         ],
         frameRate: 10, repeat: -1
     });
 
     scene.anims.create({
-        key: 'player_jump',
-        frames: [{ key: 'player_sheet', frame: 6 }],
+        key: `${sheetKey}_jump`,
+        frames: [{ key: sheetKey, frame: 6 }],
         frameRate: 1, repeat: 0
     });
 
     scene.anims.create({
-        key: 'player_fall',
-        frames: [{ key: 'player_sheet', frame: 7 }],
+        key: `${sheetKey}_fall`,
+        frames: [{ key: sheetKey, frame: 7 }],
         frameRate: 1, repeat: 0
     });
 
     scene.anims.create({
-        key: 'player_dash',
-        frames: [{ key: 'player_sheet', frame: 8 }],
+        key: `${sheetKey}_dash`,
+        frames: [{ key: sheetKey, frame: 8 }],
         frameRate: 1, repeat: 0
     });
 
-    // Ghost sprite for dash trail
-    const ghostCanvas = scene.textures.createCanvas('player_ghost', W, H);
-    const gctx = ghostCanvas.getContext();
-    drawPixelFrame(gctx, dashFrame, 0, 0, colorMap, 0.4);
-    ghostCanvas.refresh();
+    // Ghost sprite for dash trail (only for dash version)
+    if (hasDash) {
+        const ghostCanvas = scene.textures.createCanvas('player_ghost', W, H);
+        const gctx = ghostCanvas.getContext();
+        drawPixelFrame(gctx, dashFrame, 0, 0, colorMap, 0.4);
+        ghostCanvas.refresh();
+    }
 }
 
 function createBreathFrame(base) {
@@ -321,7 +338,7 @@ function drawPixelFrame(ctx, frame, ox, oy, colorMap, alpha = 1.0) {
 function generateTilesets(scene) {
     Object.keys(THEMES).forEach(themeKey => {
         const t = THEMES[themeKey];
-        const tileCount = 10;
+        const tileCount = 11; // Increased for crumbling block
         const canvas = scene.textures.createCanvas(`tiles_${themeKey}`, TILE * tileCount, TILE);
         const ctx = canvas.getContext();
 
@@ -353,6 +370,9 @@ function generateTilesets(scene) {
 
         // Tile 9: Checkpoint
         drawCheckpoint(ctx, 9 * TILE, 0, t);
+
+        // Tile 10: Crumbling Platform
+        drawCrumblingPlatform(ctx, 10 * TILE, 0, t);
 
         canvas.refresh();
 
@@ -440,6 +460,21 @@ function drawPlatform(ctx, x, y, t) {
     ctx.fillRect(x + 11, y + 1, 1, 1);
 }
 
+function drawCrumblingPlatform(ctx, x, y, t) {
+    // Looks like a platform but with cracks
+    ctx.fillStyle = t.groundDark;
+    ctx.fillRect(x, y, TILE, 4);
+    ctx.fillStyle = t.ground;
+    ctx.fillRect(x, y + 1, TILE, 3);
+    
+    // Cracks
+    ctx.fillStyle = '#1a0a2e';
+    ctx.fillRect(x + 4, y, 1, 2);
+    ctx.fillRect(x + 5, y + 1, 1, 2);
+    ctx.fillRect(x + 10, y + 2, 2, 1);
+    ctx.fillRect(x + 11, y + 1, 1, 1);
+}
+
 function drawExit(ctx, x, y, t) {
     // Glowing portal
     ctx.fillStyle = '#f0e060';
@@ -505,13 +540,17 @@ function generateBackgrounds(scene) {
         drawMountainLayer(fCtx, W, H, t.bgFar, 0.3, 60, 3);
         farCanvas.refresh();
 
-        // Layer 2: Mid mountains
+        // Layer 2: Mid layer (mountains or buildings)
         const midCanvas = scene.textures.createCanvas(`bgmid_${themeKey}`, W, H);
         const mCtx = midCanvas.getContext();
-        drawMountainLayer(mCtx, W, H, t.bgMid, 0.5, 80, 5);
+        if (themeKey === 'city') {
+            drawCityLayer(mCtx, W, H, t.bgMid, 0.5, 90);
+        } else {
+            drawMountainLayer(mCtx, W, H, t.bgMid, 0.5, 80, 5);
+        }
         midCanvas.refresh();
 
-        // Layer 3: Near silhouettes (trees/rocks)
+        // Layer 3: Near silhouettes (trees/rocks/buildings)
         const nearCanvas = scene.textures.createCanvas(`bgnear_${themeKey}`, W, H);
         const nCtx = nearCanvas.getContext();
         drawNearLayer(nCtx, W, H, t.bgNear, themeKey);
@@ -534,6 +573,29 @@ function drawMountainLayer(ctx, W, H, color, opacity, baseY, peakCount) {
     ctx.lineTo(W, H);
     ctx.closePath();
     ctx.fill();
+    ctx.globalAlpha = 1;
+}
+
+function drawCityLayer(ctx, W, H, color, opacity, baseY) {
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = color;
+    let x = 0;
+    while (x < W) {
+        const bw = 20 + Math.random() * 40;
+        const bh = 30 + Math.random() * 50;
+        ctx.fillRect(x, H - bh, bw, bh);
+        
+        // Random antennas/details on top
+        if (Math.random() > 0.5) {
+            ctx.fillRect(x + bw * 0.2, H - bh - 10, 2, 10);
+        }
+        if (Math.random() > 0.7) {
+            ctx.fillRect(x + bw * 0.7, H - bh - 15, 1, 15);
+        }
+        
+        // Gaps between buildings
+        x += bw + (Math.random() > 0.7 ? 10 : 0);
+    }
     ctx.globalAlpha = 1;
 }
 
@@ -560,6 +622,35 @@ function drawNearLayer(ctx, W, H, color, theme) {
             const rx = i * 60 + 5;
             const rh = 40 + Math.random() * 30;
             ctx.fillRect(rx, H - rh, 15 + Math.random() * 10, rh);
+        }
+    } else if (theme === 'city') {
+        // Detailed ruined buildings
+        let x = -10;
+        while (x < W) {
+            const bw = 40 + Math.random() * 50;
+            const bh = 40 + Math.random() * 60;
+            
+            // Base building
+            ctx.fillRect(x, H - bh, bw, bh);
+            
+            // Ruins (cutouts)
+            ctx.clearRect(x + bw - 10, H - bh, 15, 15);
+            if (Math.random() > 0.5) {
+                ctx.clearRect(x + 5, H - bh, 10, 10);
+            }
+
+            // Windows (dark holes)
+            ctx.fillStyle = '#1a0a2e'; // Assuming dark background color for holes
+            for(let wy = H - bh + 10; wy < H - 10; wy += 20) {
+                for(let wx = x + 10; wx < x + bw - 10; wx += 15) {
+                    if (Math.random() > 0.3) {
+                        ctx.fillRect(wx, wy, 8, 12);
+                    }
+                }
+            }
+            ctx.fillStyle = color; // Restore color
+            
+            x += bw + 5 + Math.random() * 20;
         }
     } else {
         // Clouds
@@ -639,4 +730,61 @@ function generateUI(scene) {
     sCtx.fillRect(4, 6, 1, 2);
     sCtx.fillRect(6, 6, 1, 1);
     skullCanvas.refresh();
+
+    // Strawberry icon
+    const berryIcon = scene.textures.createCanvas('icon_berry', 8, 8);
+    const bCtx = berryIcon.getContext();
+    bCtx.fillStyle = '#e03048'; // red
+    bCtx.fillRect(2, 2, 4, 5);
+    bCtx.fillRect(1, 3, 6, 3);
+    bCtx.fillRect(3, 7, 2, 1);
+    bCtx.fillStyle = '#4a7a3a'; // green leaf
+    bCtx.fillRect(3, 1, 2, 1);
+    bCtx.fillRect(2, 1, 1, 2);
+    bCtx.fillRect(5, 1, 1, 2);
+    bCtx.fillStyle = '#ffffff'; // seeds
+    bCtx.fillRect(2, 4, 1, 1);
+    bCtx.fillRect(5, 4, 1, 1);
+    bCtx.fillRect(4, 6, 1, 1);
+    berryIcon.refresh();
+}
+
+function generateCollectibles(scene) {
+    // Collectible strawberry sprite (16x16)
+    const berryCanvas = scene.textures.createCanvas('item_strawberry', 16, 16);
+    const ctx = berryCanvas.getContext();
+    
+    ctx.fillStyle = '#e03048'; // body
+    ctx.fillRect(4, 4, 8, 8);
+    ctx.fillRect(3, 5, 10, 5);
+    ctx.fillRect(5, 12, 6, 2);
+    ctx.fillRect(6, 14, 4, 1);
+    
+    ctx.fillStyle = '#f06080'; // highlight
+    ctx.fillRect(4, 5, 2, 4);
+    ctx.fillRect(5, 4, 2, 1);
+
+    ctx.fillStyle = '#4a7a3a'; // leaves
+    ctx.fillRect(6, 2, 4, 2);
+    ctx.fillRect(4, 3, 2, 1);
+    ctx.fillRect(10, 3, 2, 1);
+    ctx.fillRect(3, 4, 1, 1);
+    ctx.fillRect(12, 4, 1, 1);
+
+    ctx.fillStyle = '#ffffff'; // seeds
+    ctx.fillRect(5, 7, 1, 1);
+    ctx.fillRect(10, 7, 1, 1);
+    ctx.fillRect(7, 9, 1, 1);
+    ctx.fillRect(4, 10, 1, 1);
+    ctx.fillRect(11, 10, 1, 1);
+    ctx.fillRect(8, 12, 1, 1);
+
+    // Outline
+    ctx.fillStyle = '#1a1020';
+    ctx.fillRect(6, 1, 4, 1); // top leaf
+    ctx.fillRect(4, 2, 2, 1);
+    ctx.fillRect(10, 2, 2, 1);
+    // etc (simplified outline)
+
+    berryCanvas.refresh();
 }
