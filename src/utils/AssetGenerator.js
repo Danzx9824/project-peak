@@ -1,52 +1,59 @@
 /**
- * AssetGenerator - Procedurally generates all pixel art assets
+ * AssetGenerator - PICO-8 style pixel art assets (8x8 tiles, 16-color palette)
  */
 
-const TILE = 16;
+const TILE = 8;
 
-// Color palettes per theme
+// PICO-8 inspired palette with pink/magenta theme
+const PAL = {
+    black:    '#1a1020',
+    dkBlue:   '#2a1a4e',
+    dkPurple: '#5a2a6a',
+    dkGreen:  '#3a5a3a',
+    brown:    '#6a4a2a',
+    dkGray:   '#5a5a6a',
+    gray:     '#9a9aaa',
+    white:    '#f0e8f0',
+    red:      '#e03048',
+    orange:   '#f08030',
+    yellow:   '#f0d040',
+    green:    '#40c040',
+    blue:     '#30a0e0',
+    indigo:   '#6a6aaa',
+    pink:     '#ff6b8a',
+    peach:    '#ffb8a0'
+};
+
 export const THEMES = {
     grass: {
-        name: 'Grassy Base',
-        sky1: '#ff6b8a', sky2: '#ffb347', sky3: '#4a1a5e',
-        ground: '#4a7a3a', groundDark: '#3a5e2a', groundLight: '#6aaa4a',
-        dirt: '#8a6a3a', dirtDark: '#6a4a2a',
-        accent: '#e8d44a', spike: '#8a8a9a',
-        bgFar: '#6a2a5a', bgMid: '#5a3a6a', bgNear: '#3a5a3a',
-        leaf: '#5aaa3a', flower: '#e84a6a'
+        name: 'Pink Sky',
+        sky1: '#ff6b8a', sky2: '#d050a0', sky3: '#4a1a5e',
+        ground: PAL.dkGreen, groundDark: '#2a4a2a', groundLight: '#e0f0e0',
+        dirt: PAL.brown, dirtDark: '#4a3020',
+        accent: PAL.yellow, spike: PAL.gray,
+        leaf: '#50aa40', flower: PAL.pink
     },
     rock: {
         name: 'Rocky Cliffs',
-        sky1: '#c44a8a', sky2: '#6a2a7a', sky3: '#1a0a3e',
-        ground: '#7a7a8a', groundDark: '#5a5a6a', groundLight: '#9a9aaa',
-        dirt: '#6a5a4a', dirtDark: '#4a3a2a',
-        accent: '#e07a3a', spike: '#9a6a5a',
-        bgFar: '#4a1a4a', bgMid: '#3a2a5a', bgNear: '#5a4a3a',
-        leaf: '#8a7a5a', flower: '#e0873a'
+        sky1: '#c050a0', sky2: '#6a2a7a', sky3: '#1a0a3e',
+        ground: PAL.dkGray, groundDark: '#4a4a5a', groundLight: '#c0c0d0',
+        dirt: '#5a4a3a', dirtDark: '#3a2a1a',
+        accent: PAL.orange, spike: PAL.gray,
+        leaf: '#7a6a4a', flower: PAL.orange
     },
     cloud: {
         name: 'Cloud Heights',
         sky1: '#ffa0c0', sky2: '#c0d0ff', sky3: '#2a1a4e',
-        ground: '#c0c0d0', groundDark: '#9a9ab0', groundLight: '#e0e0f0',
-        dirt: '#b0a0c0', dirtDark: '#8a7a9a',
-        accent: '#60d0e0', spike: '#a0b0c0',
-        bgFar: '#c090c0', bgMid: '#9080b0', bgNear: '#a0a0c0',
-        leaf: '#c0e0f0', flower: '#80d0e0'
-    },
-    city: {
-        name: 'Forsaken City',
-        sky1: '#ffb8d0', sky2: '#d0a0d0', sky3: '#8090c0',
-        ground: '#708090', groundDark: '#405060', groundLight: '#e0f0ff', // snow on top
-        dirt: '#506070', dirtDark: '#304050',
-        accent: '#60c0ff', spike: '#90a0b0',
-        bgFar: '#a080b0', bgMid: '#7080a0', bgNear: '#405060',
-        leaf: '#ffffff', flower: '#80d0e0'
+        ground: PAL.gray, groundDark: '#8a8a9a', groundLight: '#e0e0f0',
+        dirt: '#a090b0', dirtDark: '#706080',
+        accent: PAL.blue, spike: '#a0b0c0',
+        leaf: '#c0e0f0', flower: PAL.blue
     }
 };
 
 export function generateAllAssets(scene) {
-    generatePlayerSprites(scene, true);  // with dash
-    generatePlayerSprites(scene, false); // without dash
+    generatePlayerSprites(scene, true);
+    generatePlayerSprites(scene, false);
     generateTilesets(scene);
     generateBackgrounds(scene);
     generateParticles(scene);
@@ -54,153 +61,150 @@ export function generateAllAssets(scene) {
     generateCollectibles(scene);
 }
 
-// ──── Player Sprites ────
+// ──── Player Sprites (8x8) ────
 function generatePlayerSprites(scene, hasDash) {
-    const W = 12, H = 16;
-    // Color palette based on dash state
-    const hairColor = hasDash ? '#e03048' : '#30a0e0';
-    const hairLight = hasDash ? '#f06080' : '#60d0f0';
-    
+    const W = 8, H = 8;
+    const hairColor = hasDash ? PAL.red : PAL.blue;
+
     const C = {
-        outline: '#1a1020',
-        hair: hairColor,
-        hairLight: hairLight,
-        skin: '#f0c090',
-        skinDark: '#d0a070',
-        eye: '#1a1030',
-        eyeWhite: '#f0f0f0',
-        body: '#3060c0',
-        bodyLight: '#4080e0',
-        bodyDark: '#2040a0',
-        scarf: '#e03048',
-        scarfDark: '#b02038',
-        pants: '#2a3060',
-        pantsLight: '#3a4080',
-        shoes: '#4a3020',
-        shoesLight: '#6a4a30'
+        'o': PAL.black,
+        'H': hairColor,
+        's': PAL.peach,
+        'E': PAL.black,
+        'B': PAL.blue,
+        'b': '#4090d0',
+        'P': PAL.dkBlue,
+        'S': PAL.brown
     };
 
-    // Pixel data for idle frame (12x16)
-    const idleFrame = [
-        '....oooo....',
-        '...oHHHHo...',
-        '..oHHhhHHo..',
-        '..oHssssHo..',
-        '..osEssEso..',
-        '...ossso....',
-        '...rrrr.....',
-        '..oBBBBo....',
-        '..oBbbBo....',
-        '..oBBBBo....',
-        '...oBBo.....',
-        '...oPPo.....',
-        '...oPPo.....',
-        '..oP..Po....',
-        '..oSooSo....',
-        '............'
+    // Idle (2 frames)
+    const idle1 = [
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBBBo..',
+        '..oPo...',
+        '..oPo...',
+        '.oS.So..'
+    ];
+    const idle2 = [
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBbBo..',
+        '..oPo...',
+        '..oPo...',
+        '.oS.So..'
     ];
 
-    const colorMap = {
-        'o': C.outline, 'H': C.hair, 'h': C.hairLight,
-        's': C.skin, 'S': C.shoes, 'E': C.eye,
-        'B': C.body, 'b': C.bodyLight, 'r': C.scarf,
-        'R': C.scarfDark, 'P': C.pants, 'p': C.pantsLight,
-        'w': C.eyeWhite, 'd': C.skinDark, 'L': C.shoesLight
-    };
-
-    // Idle animation (2 frames - subtle breathing)
-    const idleFrames = [idleFrame, createBreathFrame(idleFrame)];
-
-    // Run animation (4 frames)
-    const runFrames = createRunFrames(C, colorMap);
-
-    // Jump frame
-    const jumpFrame = [
-        '....oooo....',
-        '...oHHHHo...',
-        '..oHHhhHHo..',
-        '..oHssssHo..',
-        '..osEssEso..',
-        '...ossso....',
-        '..rrrrr.....',
-        '..oBBBBo....',
-        '..oBbbBo....',
-        '..oBBBBo....',
-        '...oBBo.....',
-        '..oP..Po....',
-        '..oP..Po....',
-        '..oSooSo....',
-        '............',
-        '............'
+    // Run (4 frames)
+    const run1 = [
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBBBo..',
+        '..oPo...',
+        '.oP.Po..',
+        '.oS.So..'
+    ];
+    const run2 = [
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBBBo..',
+        '.oP.Po..',
+        '.oS..Po.',
+        '.....So.'
+    ];
+    const run3 = [
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBBBo..',
+        '..oPo...',
+        '..oPo...',
+        '.oS.So..'
+    ];
+    const run4 = [
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBBBo..',
+        '.oP.Po..',
+        '.oP..So.',
+        '.So.....'
     ];
 
-    // Fall frame
-    const fallFrame = [
-        '............',
-        '....oooo....',
-        '...oHHHHo...',
-        '..oHHhhHHo..',
-        '..oHssssHo..',
-        '..osEssEso..',
-        '...ossso....',
-        '...rrrr.....',
-        '..oBBBBo....',
-        '..oBbbBo....',
-        '..oBBBBo....',
-        '...oBBo.....',
-        '..oP..Po....',
-        '..oP..Po....',
-        '..oSooSo....',
-        '............'
+    // Jump
+    const jump = [
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBBBo..',
+        '.oP.Po..',
+        '.oS.So..',
+        '........'
     ];
 
-    // Dash frame
-    const dashFrame = [
-        '............',
-        '....oooo....',
-        '...oHHHHo...',
-        '..oHHhhHHo..',
-        '..oHssssHo..',
-        '..osEssEso..',
-        '...osssorrr.',
-        '...oBBBBo...',
-        '...oBbbBo...',
-        '...oBBBBo...',
-        '....oBBo....',
-        '....oPPo....',
-        '...oP..Po...',
-        '...oSooSo...',
-        '............',
-        '............'
+    // Fall
+    const fall = [
+        '........',
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBBBo..',
+        '.oP.Po..',
+        '.oS.So..'
     ];
 
-    // Generate sprite sheet texture (all frames in a row)
-    const allFrames = [...idleFrames, ...runFrames, jumpFrame, fallFrame, dashFrame];
-    const sheetWidth = allFrames.length * W;
+    // Dash
+    const dash = [
+        '.oHHHo..',
+        'oHsssHo.',
+        'osEsEso.',
+        '.osss...',
+        '.oBBBo..',
+        '..oPo...',
+        '..oPo...',
+        '.oS.So..'
+    ];
+
+    const allFrames = [idle1, idle2, run1, run2, run3, run4, jump, fall, dash];
+    const sheetW = allFrames.length * W;
     const sheetKey = hasDash ? 'player_sheet' : 'player_sheet_nodash';
-    const canvas = scene.textures.createCanvas(sheetKey, sheetWidth, H);
+    const canvas = scene.textures.createCanvas(sheetKey, sheetW, H);
     const ctx = canvas.getContext();
 
     allFrames.forEach((frame, fi) => {
-        drawPixelFrame(ctx, frame, fi * W, 0, colorMap);
+        for (let y = 0; y < frame.length; y++) {
+            for (let x = 0; x < frame[y].length; x++) {
+                const ch = frame[y][x];
+                if (ch !== '.' && C[ch]) {
+                    ctx.fillStyle = C[ch];
+                    ctx.fillRect(fi * W + x, y, 1, 1);
+                }
+            }
+        }
     });
-
     canvas.refresh();
 
-    // Create frame data
-    const frameNames = [];
     for (let i = 0; i < allFrames.length; i++) {
         scene.textures.get(sheetKey).add(i, 0, i * W, 0, W, H);
-        frameNames.push(i);
     }
 
-    // Define animations
     scene.anims.create({
         key: `${sheetKey}_idle`,
         frames: [{ key: sheetKey, frame: 0 }, { key: sheetKey, frame: 1 }],
         frameRate: 3, repeat: -1
     });
-
     scene.anims.create({
         key: `${sheetKey}_run`,
         frames: [
@@ -209,303 +213,125 @@ function generatePlayerSprites(scene, hasDash) {
         ],
         frameRate: 10, repeat: -1
     });
-
     scene.anims.create({
         key: `${sheetKey}_jump`,
         frames: [{ key: sheetKey, frame: 6 }],
         frameRate: 1, repeat: 0
     });
-
     scene.anims.create({
         key: `${sheetKey}_fall`,
         frames: [{ key: sheetKey, frame: 7 }],
         frameRate: 1, repeat: 0
     });
-
     scene.anims.create({
         key: `${sheetKey}_dash`,
         frames: [{ key: sheetKey, frame: 8 }],
         frameRate: 1, repeat: 0
     });
-
-    // Ghost sprite for dash trail (only for dash version)
-    if (hasDash) {
-        const ghostCanvas = scene.textures.createCanvas('player_ghost', W, H);
-        const gctx = ghostCanvas.getContext();
-        drawPixelFrame(gctx, dashFrame, 0, 0, colorMap, 0.4);
-        ghostCanvas.refresh();
-    }
 }
 
-function createBreathFrame(base) {
-    const copy = [...base];
-    // Slight shift in body area for breathing effect
-    copy[8] = '..oBBbBo....';
-    return copy;
-}
-
-function createRunFrames(C, colorMap) {
-    const f1 = [
-        '....oooo....',
-        '...oHHHHo...',
-        '..oHHhhHHo..',
-        '..oHssssHo..',
-        '..osEssEso..',
-        '...ossso....',
-        '...rrrr.....',
-        '..oBBBBo....',
-        '..oBbbBo....',
-        '..oBBBBo....',
-        '...oBBo.....',
-        '...oPPo.....',
-        '..oP..Po....',
-        '..oSo.oSo...',
-        '............',
-        '............'
-    ];
-    const f2 = [
-        '....oooo....',
-        '...oHHHHo...',
-        '..oHHhhHHo..',
-        '..oHssssHo..',
-        '..osEssEso..',
-        '...ossso....',
-        '...rrrr.....',
-        '..oBBBBo....',
-        '..oBbbBo....',
-        '..oBBBBo....',
-        '...oBBo.....',
-        '..oPoPo.....',
-        '..oSo.Po....',
-        '......oSo...',
-        '............',
-        '............'
-    ];
-    const f3 = [
-        '....oooo....',
-        '...oHHHHo...',
-        '..oHHhhHHo..',
-        '..oHssssHo..',
-        '..osEssEso..',
-        '...ossso....',
-        '...rrrr.....',
-        '..oBBBBo....',
-        '..oBbbBo....',
-        '..oBBBBo....',
-        '...oBBo.....',
-        '...oPPo.....',
-        '...oPPo.....',
-        '..oSooSo....',
-        '............',
-        '............'
-    ];
-    const f4 = [
-        '....oooo....',
-        '...oHHHHo...',
-        '..oHHhhHHo..',
-        '..oHssssHo..',
-        '..osEssEso..',
-        '...ossso....',
-        '...rrrr.....',
-        '..oBBBBo....',
-        '..oBbbBo....',
-        '..oBBBBo....',
-        '...oBBo.....',
-        '....oPoPo...',
-        '...oP.oSo...',
-        '..oSo.......',
-        '............',
-        '............'
-    ];
-    return [f1, f2, f3, f4];
-}
-
-function drawPixelFrame(ctx, frame, ox, oy, colorMap, alpha = 1.0) {
-    ctx.globalAlpha = alpha;
-    for (let y = 0; y < frame.length; y++) {
-        for (let x = 0; x < frame[y].length; x++) {
-            const ch = frame[y][x];
-            if (ch !== '.' && colorMap[ch]) {
-                ctx.fillStyle = colorMap[ch];
-                ctx.fillRect(ox + x, oy + y, 1, 1);
-            }
-        }
-    }
-    ctx.globalAlpha = 1.0;
-}
-
-// ──── Tilesets ────
+// ──── Tilesets (8x8 per tile) ────
 function generateTilesets(scene) {
     Object.keys(THEMES).forEach(themeKey => {
         const t = THEMES[themeKey];
-        const tileCount = 11; // Increased for crumbling block
+        const tileCount = 11;
         const canvas = scene.textures.createCanvas(`tiles_${themeKey}`, TILE * tileCount, TILE);
         const ctx = canvas.getContext();
 
-        // Tile 0: Empty (nothing)
+        // Tile 0: Empty
 
-        // Tile 1: Solid ground top
-        drawGroundTop(ctx, 1 * TILE, 0, t);
+        // Tile 1: Ground top
+        ctx.fillStyle = t.groundDark;
+        ctx.fillRect(1 * TILE, 0, TILE, TILE);
+        ctx.fillStyle = t.ground;
+        ctx.fillRect(1 * TILE, 2, TILE, TILE - 2);
+        ctx.fillStyle = t.groundLight;
+        ctx.fillRect(1 * TILE, 0, TILE, 2);
+        ctx.fillStyle = t.groundDark;
+        ctx.fillRect(1 * TILE + 2, 3, 1, 1);
+        ctx.fillRect(1 * TILE + 6, 3, 1, 1);
 
-        // Tile 2: Solid ground middle
-        drawGroundMid(ctx, 2 * TILE, 0, t);
+        // Tile 2: Ground fill
+        ctx.fillStyle = t.dirt;
+        ctx.fillRect(2 * TILE, 0, TILE, TILE);
+        ctx.fillStyle = t.dirtDark;
+        ctx.fillRect(2 * TILE + 1, 2, 2, 2);
+        ctx.fillRect(2 * TILE + 5, 5, 2, 2);
 
         // Tile 3: Spike up
-        drawSpike(ctx, 3 * TILE, 0, 'up', t);
+        ctx.fillStyle = t.spike;
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(3 * TILE + 4 - i, 2 + i, i * 2 + 1, 1);
+        }
+        ctx.fillStyle = PAL.white;
+        ctx.fillRect(3 * TILE + 3, 3, 1, 1);
 
         // Tile 4: Spike down
-        drawSpike(ctx, 4 * TILE, 0, 'down', t);
+        ctx.fillStyle = t.spike;
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(4 * TILE + 4 - i, 5 - i, i * 2 + 1, 1);
+        }
 
         // Tile 5: Spike left
-        drawSpike(ctx, 5 * TILE, 0, 'left', t);
+        ctx.fillStyle = t.spike;
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(5 * TILE + 2 + i, 4 - i, 1, i * 2 + 1);
+        }
 
         // Tile 6: Spike right
-        drawSpike(ctx, 6 * TILE, 0, 'right', t);
+        ctx.fillStyle = t.spike;
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(6 * TILE + 5 - i, 4 - i, 1, i * 2 + 1);
+        }
 
-        // Tile 7: Platform (one-way)
-        drawPlatform(ctx, 7 * TILE, 0, t);
+        // Tile 7: One-way platform
+        ctx.fillStyle = t.groundLight;
+        ctx.fillRect(7 * TILE, 0, TILE, 2);
+        ctx.fillStyle = t.ground;
+        ctx.fillRect(7 * TILE, 2, TILE, 1);
+        ctx.fillStyle = t.accent;
+        ctx.fillRect(7 * TILE + 2, 1, 1, 1);
+        ctx.fillRect(7 * TILE + 5, 1, 1, 1);
 
         // Tile 8: Exit portal
-        drawExit(ctx, 8 * TILE, 0, t);
+        ctx.fillStyle = PAL.yellow;
+        ctx.fillRect(8 * TILE + 2, 1, 4, 6);
+        ctx.fillStyle = '#fff8d0';
+        ctx.fillRect(8 * TILE + 3, 2, 2, 4);
+        ctx.fillStyle = PAL.white;
+        ctx.fillRect(8 * TILE + 3, 3, 1, 1);
 
-        // Tile 9: Checkpoint
-        drawCheckpoint(ctx, 9 * TILE, 0, t);
+        // Tile 9: Checkpoint flag
+        ctx.fillStyle = PAL.dkGray;
+        ctx.fillRect(9 * TILE + 3, 1, 1, 7);
+        ctx.fillStyle = t.accent;
+        ctx.fillRect(9 * TILE + 4, 1, 3, 2);
+        ctx.fillStyle = PAL.white;
+        ctx.fillRect(9 * TILE + 5, 1, 1, 1);
 
-        // Tile 10: Crumbling Platform
-        drawCrumblingPlatform(ctx, 10 * TILE, 0, t);
+        // Tile 10: Crumbling block
+        ctx.fillStyle = t.ground;
+        ctx.fillRect(10 * TILE, 0, TILE, 3);
+        ctx.fillStyle = t.groundDark;
+        ctx.fillRect(10 * TILE, 2, TILE, 1);
+        ctx.fillStyle = PAL.black;
+        ctx.fillRect(10 * TILE + 2, 0, 1, 1);
+        ctx.fillRect(10 * TILE + 5, 1, 1, 1);
 
         canvas.refresh();
-
-        // Add individual tile frames
         for (let i = 0; i < tileCount; i++) {
             scene.textures.get(`tiles_${themeKey}`).add(i, 0, i * TILE, 0, TILE, TILE);
         }
     });
 }
 
-function drawGroundTop(ctx, x, y, t) {
-    // Top surface with grass/detail
-    ctx.fillStyle = t.groundDark;
-    ctx.fillRect(x, y, TILE, TILE);
-    ctx.fillStyle = t.ground;
-    ctx.fillRect(x, y + 2, TILE, TILE - 2);
-    ctx.fillStyle = t.groundLight;
-    ctx.fillRect(x, y, TILE, 3);
-    // Detail pixels
-    ctx.fillStyle = t.groundDark;
-    for (let i = 0; i < TILE; i += 4) {
-        ctx.fillRect(x + i, y + 4, 2, 1);
-    }
-    ctx.fillStyle = t.dirt;
-    ctx.fillRect(x, y + TILE - 4, TILE, 4);
-    // Edge highlight
-    ctx.fillStyle = t.accent;
-    ctx.fillRect(x + 2, y, 1, 1);
-    ctx.fillRect(x + 7, y, 2, 1);
-    ctx.fillRect(x + 13, y, 1, 1);
-}
-
-function drawGroundMid(ctx, x, y, t) {
-    ctx.fillStyle = t.dirt;
-    ctx.fillRect(x, y, TILE, TILE);
-    ctx.fillStyle = t.dirtDark;
-    for (let i = 0; i < TILE; i += 5) {
-        for (let j = 0; j < TILE; j += 4) {
-            ctx.fillRect(x + i + (j % 3), y + j, 2, 2);
-        }
-    }
-}
-
-function drawSpike(ctx, x, y, dir, t) {
-    ctx.fillStyle = t.spike;
-    const cx = x + 8, cy = y + 8;
-    switch (dir) {
-        case 'up':
-            for (let i = 0; i < 8; i++) {
-                ctx.fillRect(x + 8 - i, y + 4 + i, i * 2, 1);
-            }
-            ctx.fillStyle = '#e0e0f0';
-            ctx.fillRect(x + 7, y + 5, 2, 2);
-            break;
-        case 'down':
-            for (let i = 0; i < 8; i++) {
-                ctx.fillRect(x + 8 - i, y + 8 - i, i * 2, 1);
-            }
-            ctx.fillStyle = '#e0e0f0';
-            ctx.fillRect(x + 7, y + 7, 2, 2);
-            break;
-        case 'left':
-            for (let i = 0; i < 8; i++) {
-                ctx.fillRect(x + 4 + i, y + 8 - i, 1, i * 2);
-            }
-            break;
-        case 'right':
-            for (let i = 0; i < 8; i++) {
-                ctx.fillRect(x + 8 - i, y + 8 - i, 1, i * 2);
-            }
-            break;
-    }
-}
-
-function drawPlatform(ctx, x, y, t) {
-    ctx.fillStyle = t.groundLight;
-    ctx.fillRect(x, y, TILE, 4);
-    ctx.fillStyle = t.ground;
-    ctx.fillRect(x, y + 1, TILE, 3);
-    ctx.fillStyle = t.groundDark;
-    ctx.fillRect(x, y + 3, TILE, 1);
-    // Dots
-    ctx.fillStyle = t.accent;
-    ctx.fillRect(x + 3, y + 1, 1, 1);
-    ctx.fillRect(x + 11, y + 1, 1, 1);
-}
-
-function drawCrumblingPlatform(ctx, x, y, t) {
-    // Looks like a platform but with cracks
-    ctx.fillStyle = t.groundDark;
-    ctx.fillRect(x, y, TILE, 4);
-    ctx.fillStyle = t.ground;
-    ctx.fillRect(x, y + 1, TILE, 3);
-    
-    // Cracks
-    ctx.fillStyle = '#1a0a2e';
-    ctx.fillRect(x + 4, y, 1, 2);
-    ctx.fillRect(x + 5, y + 1, 1, 2);
-    ctx.fillRect(x + 10, y + 2, 2, 1);
-    ctx.fillRect(x + 11, y + 1, 1, 1);
-}
-
-function drawExit(ctx, x, y, t) {
-    // Glowing portal
-    ctx.fillStyle = '#f0e060';
-    ctx.fillRect(x + 4, y + 2, 8, 12);
-    ctx.fillStyle = '#ffe090';
-    ctx.fillRect(x + 5, y + 3, 6, 10);
-    ctx.fillStyle = '#fff8d0';
-    ctx.fillRect(x + 6, y + 4, 4, 8);
-    // Stars
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(x + 7, y + 6, 2, 2);
-}
-
-function drawCheckpoint(ctx, x, y, t) {
-    // Flag pole
-    ctx.fillStyle = '#8a7a6a';
-    ctx.fillRect(x + 7, y + 2, 2, 14);
-    // Flag
-    ctx.fillStyle = t.accent;
-    ctx.fillRect(x + 9, y + 2, 5, 4);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(x + 10, y + 3, 2, 2);
-}
-
-// ──── Background Layers ────
+// ──── Backgrounds (static gradient — single layer) ────
 function generateBackgrounds(scene) {
     Object.keys(THEMES).forEach(themeKey => {
         const t = THEMES[themeKey];
         const W = 320, H = 180;
 
-        // Layer 0: Sky gradient
+        // Single sky gradient (no parallax layers)
         const skyCanvas = scene.textures.createCanvas(`sky_${themeKey}`, W, H);
         const sCtx = skyCanvas.getContext();
         const grad = sCtx.createLinearGradient(0, 0, 0, H);
@@ -514,277 +340,140 @@ function generateBackgrounds(scene) {
         grad.addColorStop(1, t.sky3);
         sCtx.fillStyle = grad;
         sCtx.fillRect(0, 0, W, H);
-        // Sun/moon
-        sCtx.fillStyle = '#ffe8b0';
-        sCtx.beginPath();
-        sCtx.arc(240, 40, 20, 0, Math.PI * 2);
-        sCtx.fill();
-        sCtx.fillStyle = '#fff4d8';
-        sCtx.beginPath();
-        sCtx.arc(240, 40, 15, 0, Math.PI * 2);
-        sCtx.fill();
+
         // Stars
         sCtx.fillStyle = '#ffffff';
-        for (let i = 0; i < 30; i++) {
-            const sx = Math.random() * W;
-            const sy = Math.random() * H * 0.6;
-            sCtx.globalAlpha = 0.3 + Math.random() * 0.7;
-            sCtx.fillRect(Math.floor(sx), Math.floor(sy), 1, 1);
+        for (let i = 0; i < 20; i++) {
+            const sx = Math.floor(Math.random() * W);
+            const sy = Math.floor(Math.random() * H * 0.5);
+            sCtx.globalAlpha = 0.3 + Math.random() * 0.5;
+            sCtx.fillRect(sx, sy, 1, 1);
         }
         sCtx.globalAlpha = 1;
-        skyCanvas.refresh();
 
-        // Layer 1: Far mountains
-        const farCanvas = scene.textures.createCanvas(`bgfar_${themeKey}`, W, H);
-        const fCtx = farCanvas.getContext();
-        drawMountainLayer(fCtx, W, H, t.bgFar, 0.3, 60, 3);
-        farCanvas.refresh();
-
-        // Layer 2: Mid layer (mountains or buildings)
-        const midCanvas = scene.textures.createCanvas(`bgmid_${themeKey}`, W, H);
-        const mCtx = midCanvas.getContext();
-        if (themeKey === 'city') {
-            drawCityLayer(mCtx, W, H, t.bgMid, 0.5, 90);
-        } else {
-            drawMountainLayer(mCtx, W, H, t.bgMid, 0.5, 80, 5);
+        // Simple mountain silhouette at bottom
+        sCtx.fillStyle = t.sky3;
+        sCtx.globalAlpha = 0.4;
+        sCtx.beginPath();
+        sCtx.moveTo(0, H);
+        const peaks = 6;
+        for (let i = 0; i <= peaks; i++) {
+            const px = (i / peaks) * W;
+            const py = H - 30 + Math.sin(i * 2.1) * 20 + Math.cos(i * 0.8) * 10;
+            sCtx.lineTo(px, py);
         }
-        midCanvas.refresh();
+        sCtx.lineTo(W, H);
+        sCtx.closePath();
+        sCtx.fill();
+        sCtx.globalAlpha = 1;
 
-        // Layer 3: Near silhouettes (trees/rocks/buildings)
-        const nearCanvas = scene.textures.createCanvas(`bgnear_${themeKey}`, W, H);
-        const nCtx = nearCanvas.getContext();
-        drawNearLayer(nCtx, W, H, t.bgNear, themeKey);
-        nearCanvas.refresh();
+        skyCanvas.refresh();
     });
 }
 
-function drawMountainLayer(ctx, W, H, color, opacity, baseY, peakCount) {
-    ctx.globalAlpha = opacity;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(0, H);
-    const segW = W / peakCount;
-    for (let i = 0; i <= peakCount; i++) {
-        const px = i * segW;
-        const py = baseY + Math.sin(i * 1.5) * 30 + Math.cos(i * 0.7) * 20;
-        if (i === 0) ctx.lineTo(0, py);
-        else ctx.lineTo(px, py);
-    }
-    ctx.lineTo(W, H);
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalAlpha = 1;
-}
-
-function drawCityLayer(ctx, W, H, color, opacity, baseY) {
-    ctx.globalAlpha = opacity;
-    ctx.fillStyle = color;
-    let x = 0;
-    while (x < W) {
-        const bw = 20 + Math.random() * 40;
-        const bh = 30 + Math.random() * 50;
-        ctx.fillRect(x, H - bh, bw, bh);
-        
-        // Random antennas/details on top
-        if (Math.random() > 0.5) {
-            ctx.fillRect(x + bw * 0.2, H - bh - 10, 2, 10);
-        }
-        if (Math.random() > 0.7) {
-            ctx.fillRect(x + bw * 0.7, H - bh - 15, 1, 15);
-        }
-        
-        // Gaps between buildings
-        x += bw + (Math.random() > 0.7 ? 10 : 0);
-    }
-    ctx.globalAlpha = 1;
-}
-
-function drawNearLayer(ctx, W, H, color, theme) {
-    ctx.globalAlpha = 0.6;
-    ctx.fillStyle = color;
-    if (theme === 'grass') {
-        // Trees
-        for (let i = 0; i < 8; i++) {
-            const tx = i * 45 + 10;
-            const th = 30 + Math.random() * 20;
-            const tw = 8 + Math.random() * 6;
-            // Trunk
-            ctx.fillRect(tx + tw / 2 - 1, H - th, 3, th);
-            // Canopy
-            for (let j = 0; j < 3; j++) {
-                const cw = tw - j * 2;
-                ctx.fillRect(tx + j, H - th - 5 + j * 3, cw, 6);
-            }
-        }
-    } else if (theme === 'rock') {
-        // Rocky pillars
-        for (let i = 0; i < 6; i++) {
-            const rx = i * 60 + 5;
-            const rh = 40 + Math.random() * 30;
-            ctx.fillRect(rx, H - rh, 15 + Math.random() * 10, rh);
-        }
-    } else if (theme === 'city') {
-        // Detailed ruined buildings
-        let x = -10;
-        while (x < W) {
-            const bw = 40 + Math.random() * 50;
-            const bh = 40 + Math.random() * 60;
-            
-            // Base building
-            ctx.fillRect(x, H - bh, bw, bh);
-            
-            // Ruins (cutouts)
-            ctx.clearRect(x + bw - 10, H - bh, 15, 15);
-            if (Math.random() > 0.5) {
-                ctx.clearRect(x + 5, H - bh, 10, 10);
-            }
-
-            // Windows (dark holes)
-            ctx.fillStyle = '#1a0a2e'; // Assuming dark background color for holes
-            for(let wy = H - bh + 10; wy < H - 10; wy += 20) {
-                for(let wx = x + 10; wx < x + bw - 10; wx += 15) {
-                    if (Math.random() > 0.3) {
-                        ctx.fillRect(wx, wy, 8, 12);
-                    }
-                }
-            }
-            ctx.fillStyle = color; // Restore color
-            
-            x += bw + 5 + Math.random() * 20;
-        }
-    } else {
-        // Clouds
-        for (let i = 0; i < 5; i++) {
-            const cx = i * 70 + 10;
-            const cy = H - 40 + Math.random() * 20;
-            drawCloud(ctx, cx, cy);
-        }
-    }
-    ctx.globalAlpha = 1;
-}
-
-function drawCloud(ctx, x, y) {
-    ctx.fillRect(x, y, 20, 6);
-    ctx.fillRect(x + 3, y - 3, 14, 3);
-    ctx.fillRect(x - 2, y + 2, 24, 4);
-}
-
-// ──── Particles ────
+// ──── Particles (1-2px, minimal) ────
 function generateParticles(scene) {
-    // Dust particle
-    const dustCanvas = scene.textures.createCanvas('particle_dust', 4, 4);
-    const dCtx = dustCanvas.getContext();
+    // Dust
+    const dustC = scene.textures.createCanvas('particle_dust', 2, 2);
+    const dCtx = dustC.getContext();
     dCtx.fillStyle = '#d0c8a0';
-    dCtx.fillRect(1, 1, 2, 2);
-    dCtx.fillStyle = '#e0d8b0';
-    dCtx.fillRect(1, 1, 1, 1);
-    dustCanvas.refresh();
+    dCtx.fillRect(0, 0, 2, 2);
+    dustC.refresh();
 
-    // Leaf particle
-    const leafCanvas = scene.textures.createCanvas('particle_leaf', 4, 4);
-    const lCtx = leafCanvas.getContext();
-    lCtx.fillStyle = '#6aaa4a';
-    lCtx.fillRect(0, 1, 3, 2);
-    lCtx.fillStyle = '#4a8a3a';
-    lCtx.fillRect(1, 0, 1, 1);
-    lCtx.fillRect(2, 2, 1, 1);
-    leafCanvas.refresh();
+    // Leaf
+    const leafC = scene.textures.createCanvas('particle_leaf', 2, 2);
+    const lCtx = leafC.getContext();
+    lCtx.fillStyle = '#50aa40';
+    lCtx.fillRect(0, 0, 2, 1);
+    lCtx.fillRect(0, 1, 1, 1);
+    leafC.refresh();
 
-    // Wind/pollen particle
-    const pollenCanvas = scene.textures.createCanvas('particle_pollen', 2, 2);
-    const pCtx = pollenCanvas.getContext();
+    // Pollen
+    const pollenC = scene.textures.createCanvas('particle_pollen', 1, 1);
+    const pCtx = pollenC.getContext();
     pCtx.fillStyle = '#fff8d0';
-    pCtx.fillRect(0, 0, 2, 2);
-    pollenCanvas.refresh();
+    pCtx.fillRect(0, 0, 1, 1);
+    pollenC.refresh();
 
-    // Death particle
-    const deathCanvas = scene.textures.createCanvas('particle_death', 3, 3);
-    const deCtx = deathCanvas.getContext();
-    deCtx.fillStyle = '#ff4060';
-    deCtx.fillRect(0, 0, 3, 3);
-    deathCanvas.refresh();
+    // Death
+    const deathC = scene.textures.createCanvas('particle_death', 2, 2);
+    const deCtx = deathC.getContext();
+    deCtx.fillStyle = PAL.red;
+    deCtx.fillRect(0, 0, 2, 2);
+    deathC.refresh();
 
-    // Dash trail particle
-    const trailCanvas = scene.textures.createCanvas('particle_trail', 3, 3);
-    const tCtx = trailCanvas.getContext();
-    tCtx.fillStyle = '#80c0ff';
-    tCtx.fillRect(0, 0, 3, 3);
-    tCtx.fillStyle = '#c0e0ff';
-    tCtx.fillRect(1, 1, 1, 1);
-    trailCanvas.refresh();
+    // Dash trail
+    const trailC = scene.textures.createCanvas('particle_trail', 2, 2);
+    const tCtx = trailC.getContext();
+    tCtx.fillStyle = PAL.blue;
+    tCtx.fillRect(0, 0, 2, 2);
+    trailC.refresh();
+
+    // Collect sparkle
+    const sparkC = scene.textures.createCanvas('particle_sparkle', 2, 2);
+    const spCtx = sparkC.getContext();
+    spCtx.fillStyle = PAL.yellow;
+    spCtx.fillRect(0, 0, 1, 1);
+    spCtx.fillRect(1, 1, 1, 1);
+    spCtx.fillStyle = PAL.white;
+    spCtx.fillRect(1, 0, 1, 1);
+    spCtx.fillRect(0, 1, 1, 1);
+    sparkC.refresh();
 }
 
 // ──── UI Elements ────
 function generateUI(scene) {
-    // Death icon (skull)
-    const skullCanvas = scene.textures.createCanvas('icon_death', 8, 8);
-    const sCtx = skullCanvas.getContext();
-    sCtx.fillStyle = '#ffffff';
-    sCtx.fillRect(1, 0, 6, 6);
-    sCtx.fillRect(0, 1, 8, 4);
-    sCtx.fillStyle = '#1a1020';
-    sCtx.fillRect(2, 2, 1, 2);
-    sCtx.fillRect(5, 2, 1, 2);
-    sCtx.fillStyle = '#ffffff';
-    sCtx.fillRect(2, 6, 1, 2);
-    sCtx.fillRect(4, 6, 1, 2);
-    sCtx.fillRect(6, 6, 1, 1);
-    skullCanvas.refresh();
+    // Death icon (tiny skull)
+    const skullC = scene.textures.createCanvas('icon_death', 6, 6);
+    const sCtx = skullC.getContext();
+    sCtx.fillStyle = PAL.white;
+    sCtx.fillRect(1, 0, 4, 4);
+    sCtx.fillRect(0, 1, 6, 2);
+    sCtx.fillStyle = PAL.black;
+    sCtx.fillRect(1, 1, 1, 1);
+    sCtx.fillRect(4, 1, 1, 1);
+    sCtx.fillStyle = PAL.white;
+    sCtx.fillRect(1, 4, 1, 2);
+    sCtx.fillRect(3, 4, 1, 1);
+    sCtx.fillRect(5, 4, 1, 1);
+    skullC.refresh();
 
-    // Strawberry icon
-    const berryIcon = scene.textures.createCanvas('icon_berry', 8, 8);
-    const bCtx = berryIcon.getContext();
-    bCtx.fillStyle = '#e03048'; // red
-    bCtx.fillRect(2, 2, 4, 5);
-    bCtx.fillRect(1, 3, 6, 3);
-    bCtx.fillRect(3, 7, 2, 1);
-    bCtx.fillStyle = '#4a7a3a'; // green leaf
-    bCtx.fillRect(3, 1, 2, 1);
-    bCtx.fillRect(2, 1, 1, 2);
-    bCtx.fillRect(5, 1, 1, 2);
-    bCtx.fillStyle = '#ffffff'; // seeds
-    bCtx.fillRect(2, 4, 1, 1);
-    bCtx.fillRect(5, 4, 1, 1);
-    bCtx.fillRect(4, 6, 1, 1);
-    berryIcon.refresh();
+    // Berry icon
+    const berryI = scene.textures.createCanvas('icon_berry', 6, 6);
+    const bCtx = berryI.getContext();
+    bCtx.fillStyle = PAL.red;
+    bCtx.fillRect(1, 2, 4, 3);
+    bCtx.fillRect(2, 5, 2, 1);
+    bCtx.fillStyle = PAL.dkGreen;
+    bCtx.fillRect(2, 0, 2, 2);
+    bCtx.fillStyle = PAL.white;
+    bCtx.fillRect(2, 3, 1, 1);
+    berryI.refresh();
 }
 
+// ──── Collectibles ────
 function generateCollectibles(scene) {
-    // Collectible strawberry sprite (16x16)
-    const berryCanvas = scene.textures.createCanvas('item_strawberry', 16, 16);
-    const ctx = berryCanvas.getContext();
-    
-    ctx.fillStyle = '#e03048'; // body
-    ctx.fillRect(4, 4, 8, 8);
-    ctx.fillRect(3, 5, 10, 5);
-    ctx.fillRect(5, 12, 6, 2);
-    ctx.fillRect(6, 14, 4, 1);
-    
+    // Strawberry (8x8)
+    const berryC = scene.textures.createCanvas('item_strawberry', 8, 8);
+    const ctx = berryC.getContext();
+
+    ctx.fillStyle = PAL.red;
+    ctx.fillRect(2, 2, 4, 4);
+    ctx.fillRect(1, 3, 6, 2);
+    ctx.fillRect(3, 6, 2, 1);
+
     ctx.fillStyle = '#f06080'; // highlight
-    ctx.fillRect(4, 5, 2, 4);
-    ctx.fillRect(5, 4, 2, 1);
+    ctx.fillRect(2, 2, 1, 2);
 
-    ctx.fillStyle = '#4a7a3a'; // leaves
-    ctx.fillRect(6, 2, 4, 2);
-    ctx.fillRect(4, 3, 2, 1);
-    ctx.fillRect(10, 3, 2, 1);
-    ctx.fillRect(3, 4, 1, 1);
-    ctx.fillRect(12, 4, 1, 1);
+    ctx.fillStyle = PAL.dkGreen; // leaves
+    ctx.fillRect(3, 0, 2, 2);
+    ctx.fillRect(2, 1, 1, 1);
+    ctx.fillRect(5, 1, 1, 1);
 
-    ctx.fillStyle = '#ffffff'; // seeds
-    ctx.fillRect(5, 7, 1, 1);
-    ctx.fillRect(10, 7, 1, 1);
-    ctx.fillRect(7, 9, 1, 1);
-    ctx.fillRect(4, 10, 1, 1);
-    ctx.fillRect(11, 10, 1, 1);
-    ctx.fillRect(8, 12, 1, 1);
+    ctx.fillStyle = PAL.white; // seeds
+    ctx.fillRect(2, 4, 1, 1);
+    ctx.fillRect(5, 4, 1, 1);
+    ctx.fillRect(4, 5, 1, 1);
 
-    // Outline
-    ctx.fillStyle = '#1a1020';
-    ctx.fillRect(6, 1, 4, 1); // top leaf
-    ctx.fillRect(4, 2, 2, 1);
-    ctx.fillRect(10, 2, 2, 1);
-    // etc (simplified outline)
-
-    berryCanvas.refresh();
+    berryC.refresh();
 }
